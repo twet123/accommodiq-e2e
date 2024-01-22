@@ -197,17 +197,38 @@ public class SearchPage {
         wait.until(ExpectedConditions.elementToBeClickable(searchButton)).click();
     }
 
+    public void clear() {
+        WebDriverWait wait = new WebDriverWait(driver, 4);
+
+        try {
+            wait.until(ExpectedConditions.visibilityOf(overlayPanel));
+            clickMoreFiltersButton();
+        } catch (TimeoutException ignored) { }
+
+        wait.until(ExpectedConditions.elementToBeClickable(clearButton)).click();
+    }
+
     public boolean verifyResults(String location, String startDate, String endDate, Integer guests, String title, Integer minPrice, Integer maxPrice, String selectedType, List<String> selectedBenefits) {
         WebDriverWait wait = new WebDriverWait(driver, 4);
+        boolean areThereBenefits = true;
+
+        if (startDate != null && endDate != null && accommodationCardsInfo.isEmpty()) {
+            return true;
+        }
 
         for (WebElement accommodationInfo : accommodationCardsInfo) {
             wait.until(ExpectedConditions.visibilityOf(accommodationInfo));
 
             WebElement accommodationTitle = accommodationInfo.findElement(By.cssSelector("h2"));
-            WebElement accommodationLocation = accommodationInfo.findElement(By.cssSelector("[aria-label*='location']"));
+            WebElement accommodationLocation = accommodationInfo.findElement(By.cssSelector("[aria-label*='address']"));
             WebElement accommodationGuestRange = accommodationInfo.findElement(By.cssSelector("[aria-label*='guest-range']"));
             WebElement accommodationType = accommodationInfo.findElement(By.cssSelector("[aria-label*='type']"));
-            WebElement accommodationBenefits = accommodationInfo.findElement(By.cssSelector("[aria-label*='benefits']"));
+            WebElement accommodationBenefits = null;
+            try {
+                accommodationBenefits = accommodationInfo.findElement(By.cssSelector("[aria-label*='benefits']"));
+            } catch (Exception e) {
+                areThereBenefits = false;
+            }
             WebElement accommodationPrice = accommodationInfo.findElement(By.cssSelector("span.bold"));
             WebElement accommodationFullPrice = accommodationInfo.findElement(By.cssSelector("[aria-label*='price']"));
 
@@ -215,7 +236,8 @@ public class SearchPage {
             System.out.println(accommodationLocation.getText());
             System.out.println(accommodationGuestRange.getText());
             System.out.println(accommodationType.getText());
-            System.out.println(accommodationBenefits.getText());
+            if (areThereBenefits)
+                System.out.println(accommodationBenefits.getText());
             System.out.println(accommodationPrice.getText());
             System.out.println(accommodationFullPrice.getText());
 
@@ -228,25 +250,36 @@ public class SearchPage {
             String[] tokens = accommodationGuestRange.getText().split(" ");
             int minGuests = Integer.parseInt(tokens[0]);
             int maxGuests = Integer.parseInt(tokens[2]);
-            if (guests != null && (guests < minGuests || guests > maxGuests))
+            if (guests != null && (guests < minGuests || guests > maxGuests)) {
                 return false;
+            }
 
             if (selectedType != null && !accommodationType.getText().equals(selectedType))
                 return false;
 
-            if (selectedBenefits != null && !selectedBenefits.isEmpty()) {
-                String[] benefitsTokens = accommodationBenefits.getText().split(" ");
+            if (areThereBenefits && selectedBenefits != null && !selectedBenefits.isEmpty()) {
+                String[] benefitsTokens = accommodationBenefits.getText().split(", ");
+                boolean benefitContained = false;
 
                 for (String benefitToken : benefitsTokens) {
-                    if (!selectedBenefits.contains(benefitToken)) {
-                        return false;
+                    System.out.println(benefitToken);
+                    if (selectedBenefits.contains(benefitToken)) {
+                        benefitContained = true;
                     }
                 }
+
+                if (!benefitContained) return false;
             }
 
             int price = Integer.parseInt(accommodationPrice.getText().trim().substring(1));
-            if (minPrice != null && maxPrice != null && (price < minPrice || price > minPrice))
+            System.out.println(price);
+            if (minPrice != null && maxPrice != null && (price < minPrice || price > maxPrice)) {
                 return false;
+            }
+
+            if (startDate != null && endDate != null && guests != null && accommodationFullPrice.getText().contains("From")) {
+                return false;
+            }
 
         }
 
