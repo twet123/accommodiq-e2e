@@ -37,6 +37,6 @@ public class SearchAndFilterTest extends TestBase {
         List<String> selectedBenefits = searchPage.selectAccommodationBenefits(benefits);
         searchPage.search();
 
-        searchPage.verifyResults(location, startDate, endDate, guests, title, minPrice, maxPrice, type, selectedBenefits);
+        Assert.assertTrue(searchPage.verifyResults(location, startDate, endDate, guests, title, minPrice, maxPrice, type, selectedBenefits));
     }
 }

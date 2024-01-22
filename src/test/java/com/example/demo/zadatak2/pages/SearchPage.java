@@ -198,7 +198,11 @@ public class SearchPage {
     }
 
     public boolean verifyResults(String location, String startDate, String endDate, Integer guests, String title, Integer minPrice, Integer maxPrice, String selectedType, List<String> selectedBenefits) {
+        WebDriverWait wait = new WebDriverWait(driver, 4);
+
         for (WebElement accommodationInfo : accommodationCardsInfo) {
+            wait.until(ExpectedConditions.visibilityOf(accommodationInfo));
+
             WebElement accommodationTitle = accommodationInfo.findElement(By.cssSelector("h2"));
             WebElement accommodationLocation = accommodationInfo.findElement(By.cssSelector("[aria-label*='location']"));
             WebElement accommodationGuestRange = accommodationInfo.findElement(By.cssSelector("[aria-label*='guest-range']"));
@@ -214,6 +218,36 @@ public class SearchPage {
             System.out.println(accommodationBenefits.getText());
             System.out.println(accommodationPrice.getText());
             System.out.println(accommodationFullPrice.getText());
+
+            if (title != null && !accommodationTitle.getText().contains(title))
+                return false;
+
+            if (location != null && !accommodationLocation.getText().contains(location))
+                return false;
+
+            String[] tokens = accommodationGuestRange.getText().split(" ");
+            int minGuests = Integer.parseInt(tokens[0]);
+            int maxGuests = Integer.parseInt(tokens[2]);
+            if (guests != null && (guests < minGuests || guests > maxGuests))
+                return false;
+
+            if (selectedType != null && !accommodationType.getText().equals(selectedType))
+                return false;
+
+            if (selectedBenefits != null && !selectedBenefits.isEmpty()) {
+                String[] benefitsTokens = accommodationBenefits.getText().split(" ");
+
+                for (String benefitToken : benefitsTokens) {
+                    if (!selectedBenefits.contains(benefitToken)) {
+                        return false;
+                    }
+                }
+            }
+
+            int price = Integer.parseInt(accommodationPrice.getText().trim().substring(1));
+            if (minPrice != null && maxPrice != null && (price < minPrice || price > minPrice))
+                return false;
+
         }
 
         return true;
